@@ -4,39 +4,17 @@ import (
 	"math"
 )
 
-type vector struct {
-	id     int
-	values []float64
-}
-
-type path []vector
+type point []float64
+type pointSet []point
 type permutation []int
 
 func main() {
-	n := 4
-	p := make(path, n)
-	for i := 0; i < n; i++ {
-		p[i].id = i
-	}
-	p[0].values = []float64{0, 0}
-	p[1].values = []float64{2, 2}
-	p[2].values = []float64{3, 1}
-	p[3].values = []float64{4, 2}
-	solve(p)
+
 }
 
-func solve(p path) {
-	// n := len(p)
-	// perm := nextPerm(make(permutation, n))
-	// minDist := totalDistance(p)
-	// dist:=minDist
-	// for i:=0;i<fact(n);i++{
-
-	// }
-
-	// fmt.Println(minDist)
-}
-
+// nextPerm returns the next lexicographical permutation. If
+// the current permutation is the last permutation, then the
+// base permutation is returned.
 func nextPerm(p permutation) (q permutation) {
 	// 1. Find largest index k such that p[k] < p[k+1]. If k
 	//    remains -1, p is the final lexicographical
@@ -78,37 +56,37 @@ func nextPerm(p permutation) (q permutation) {
 	return q
 }
 
-func totalDistance(p path) (d float64) {
-	n := len(p)
+// totalDist returns the total distance traversed across a
+// path of points. A path is a permutation of points.
+// Assumes the point set and the permutation are of equal
+// dimension.
+func totalDist(ps pointSet, perm permutation) (d float64) {
+	n := len(ps)
 	for i := 0; i+1 < n; i++ {
-		d += math.Sqrt(sqDist(p[i], p[i+1]))
+		d += math.Sqrt(sqDist(ps[perm[i]], ps[perm[i+1]]))
 	}
-	d += math.Sqrt(sqDist(p[0], p[n-1]))
+	d += math.Sqrt(sqDist(ps[perm[0]], ps[perm[n-1]]))
 	return d
 }
 
-func totalSqDist(p path) (d float64) {
-	n := len(p)
+// totalSqDist returns the total squared distance traversed
+// across a path of points. A path is a permutation of
+// points. Assumes teh point set and the permutation are of
+// equal dimension.
+func totalSqDist(ps pointSet, perm permutation) (d float64) {
+	n := len(ps)
 	for i := 0; i+1 < n; i++ {
-		d += sqDist(p[i], p[i+1])
+		d += sqDist(ps[perm[i]], ps[perm[i+1]])
 	}
-	d += sqDist(p[0], p[n-1])
+	d += sqDist(ps[perm[0]], ps[perm[n-1]])
 	return d
 }
 
-func sqDist(U, V vector) (d float64) {
-	n := len(U.values)
-	for i := 0; i < n; i++ {
-		d += (U.values[i] - V.values[i]) * (U.values[i] - V.values[i])
+// sqDist returns the squared distance between two points.
+// Assumes the points are equal in dimension.
+func sqDist(x, y point) (d float64) {
+	for i := range x {
+		d += (x[i] - y[i]) * (x[i] - y[i])
 	}
 	return d
-}
-
-func fact(n int) (f int) {
-	f = 1
-	for i := 2; i < n; i++ {
-		f *= i
-	}
-	f *= n
-	return f
 }
