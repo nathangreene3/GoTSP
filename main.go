@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -9,7 +10,15 @@ type pointSet []point
 type permutation []int
 
 func main() {
-
+	ps := []point{
+		point{0, 0},
+		point{2, 2},
+		point{3, 1},
+		point{4, 2},
+	}
+	perm := basePerm(len(ps))
+	dist := totalDist(ps, perm)
+	fmt.Println(dist)
 }
 
 // nextPerm returns the next lexicographical permutation. If
@@ -54,6 +63,15 @@ func nextPerm(p permutation) (q permutation) {
 		}
 	}
 	return q
+}
+
+// basePerm returns the base permutation (012...n-1).
+func basePerm(n int) (p permutation) {
+	p = make([]int, n)
+	for i := 0; i < n; i++ {
+		p[i] = i
+	}
+	return p
 }
 
 // totalDist returns the total distance traversed across a
