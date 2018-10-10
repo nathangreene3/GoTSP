@@ -21,7 +21,6 @@ func nextPerm(p permutation) permutation {
 			break
 		}
 	}
-	fmt.Println("K:", k)
 
 	if k == -1 {
 		// Generate the first permuation.
@@ -39,18 +38,17 @@ func nextPerm(p permutation) permutation {
 				break
 			}
 		}
-		fmt.Println("J:", j)
 
-		// Copy p[0:k].
+		// 4.1 Copy p[0:k].
 		for i := 0; i < k; i++ {
 			q[i] = p[i]
 		}
 
-		// Swap p[k] and p[j].
+		// 4.2 Swap p[k] and p[j].
 		q[k] = p[j]
 		q[j] = p[k]
 
-		// 4. Reverse p[k+1:] ignoring p[j].
+		// 4.3 Reverse p[k+1:] ignoring p[j].
 		for i := k + 1; i < j; i++ {
 			q[i] = p[n-i-1]
 		}
