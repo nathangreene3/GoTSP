@@ -5,28 +5,25 @@ import (
 	"math"
 )
 
-// point is a set of values.
-type point []float64
-
-// pointSet is a set of points.
-type pointSet []point
-
-// permutation is an ordering on Z(n).
-type permutation []int
-
 func main() {
-	// ps := []point{
-	// 	point{0, 0},
-	// 	point{2, 2},
-	// 	point{3, 1},
-	// 	point{4, 2},
+	p := basePerm(4)
+	fmt.Println(nextPerm(*p))
+	// fmt.Println(*p)
+	// for i := 0; i < factorial(len(*p)); i++ {
+	// 	*p = nextPerm(*p)
+	// 	fmt.Println(*p)
 	// }
-	perm := basePerm(4)
-	for i := 0; i < factorial(len(perm)); i++ {
-		fmt.Println(perm)
-		perm = nextPerm(perm)
+}
+
+func nextPerm2(p permutation) {
+	facts := make([]int, len(p))
+	for i := range facts {
+		facts[i] = factorial(i)
 	}
-	// fmt.Println(naiveSoln(ps))
+	p[len(p)-1] = 0
+	for i := 0; i < len(p)-1; i++ {
+		// d:=
+	}
 }
 
 // factorial returns n!
@@ -43,24 +40,24 @@ func removeCrossPaths(ps pointSet, perm permutation) {
 }
 
 func naiveSoln(ps pointSet) (minDist float64, minPerm permutation) {
-	perm := basePerm(len(ps))
-	base := copyPerm(perm)
-	minPerm = copyPerm(perm)
-	dist := 0.0
-	minDist = math.MaxFloat64
-	notEqual := true
-	for notEqual {
-		dist = totalSqDist(ps, perm)
-		if dist < minDist {
-			minDist = dist
-			minPerm = copyPerm(perm)
-		}
-		perm = nextPerm(perm)
-		if comparePerms(perm, base) {
-			notEqual = false
-		}
-	}
-	minDist = totalDist(ps, minPerm)
+	// perm := basePerm(len(ps))
+	// base := copyPerm(perm)
+	// minPerm = copyPerm(perm)
+	// dist := 0.0
+	// minDist = math.MaxFloat64
+	// notEqual := true
+	// for notEqual {
+	// 	dist = totalSqDist(ps, perm)
+	// 	if dist < minDist {
+	// 		minDist = dist
+	// 		minPerm = copyPerm(perm)
+	// 	}
+	// 	perm = nextPerm(perm)
+	// 	if comparePerms(perm, base) {
+	// 		notEqual = false
+	// 	}
+	// }
+	// minDist = totalDist(ps, minPerm)
 	return minDist, minPerm
 }
 
@@ -88,66 +85,6 @@ func comparePerms(x, y permutation) (equal bool) {
 		}
 	}
 	return equal
-}
-
-// nextPerm returns the next lexicographical permutation. If
-// the current permutation is the last permutation, then the
-// base permutation is returned.
-func nextPerm(p permutation) (q permutation) {
-	// Find largest index k such that p[k] < p[k+1]. If k
-	// remains -1, p is the final lexicographical
-	// permutation (ie n-1...210).
-	n := len(p)
-	q = make(permutation, n)
-	k := -1
-	for i := n - 2; 0 <= i; i-- {
-		if p[i] < p[i+1] {
-			k = i
-			break
-		}
-	}
-
-	if k == -1 {
-		// Generate the first permuation.
-		for i := 0; i < len(p); i++ {
-			q[i] = i
-		}
-	} else {
-		// Find largest index j > k such that p[k] < p[j].
-		// If k = -1, return the base permutation
-		// (0, 1, 2, ..., n-1).
-		j := -1
-		for i := n - 1; k < i; i-- {
-			if p[k] < p[i] {
-				j = i
-				break
-			}
-		}
-
-		// Copy p[0:k].
-		for i := 0; i < k; i++ {
-			q[i] = p[i]
-		}
-
-		// Swap p[k] and p[j].
-		q[k] = p[j]
-		q[j] = p[k]
-
-		// 4. Reverse p[k+1:]
-		for i := k + 1; i < n; i++ {
-			q[i] = p[n-i-1]
-		}
-	}
-	return q
-}
-
-// basePerm returns the base permutation (012...n-1).
-func basePerm(n int) (p permutation) {
-	p = make([]int, n)
-	for i := 0; i < n; i++ {
-		p[i] = i
-	}
-	return p
 }
 
 // totalDist returns the total distance traversed across a
