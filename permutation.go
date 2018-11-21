@@ -11,7 +11,6 @@ func nextPerm(p permutation) permutation {
 	// remains -1, p is the final lexicographical
 	// permutation (ie n-1...210).
 	n := len(p)
-	q := make(permutation, n)
 	k := -1
 	for i := n - 2; 0 <= i; i-- {
 		if p[i] < p[i+1] {
@@ -26,8 +25,6 @@ func nextPerm(p permutation) permutation {
 	}
 
 	// Find largest index j > k such that p[k] < p[j].
-	// If k = -1, return the base permutation
-	// (0, 1, 2, ..., n-1).
 	j := -1
 	for i := n - 1; k < i; i-- { // 0 <= k < n-1
 		if p[k] < p[i] {
@@ -36,23 +33,21 @@ func nextPerm(p permutation) permutation {
 		}
 	}
 
-	// Copy p[0:k]. We could use copy, but the next steps look
-	// similar and cannot take advantage of copy.
-	for i := 0; i < k; i++ {
-		q[i] = p[i]
-	}
+	q := make(permutation, n)
+	copy(q, p)
 
 	// Swap p[k] and p[j].
-	q[k] = p[j]
-	q[j] = p[k]
+	q[k], q[j] = q[j], q[k]
 
-	// Reverse p[k+1:] ignoring p[j].
-	for i := k + 1; i < j; i++ {
-		q[i] = p[n-i-1]
+	// Reverse p[k+1:].
+	a := k + 1
+	b := n - 1
+	for a < b {
+		q[a], q[b] = q[b], q[a]
+		a++
+		b--
 	}
-	for i := j + 1; i < n; i++ {
-		q[i] = p[n-i-1]
-	}
+
 	return q
 }
 

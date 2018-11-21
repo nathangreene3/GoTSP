@@ -2,15 +2,23 @@ package main
 
 import (
 	"fmt"
+	"math"
 )
 
 func main() {
-	p := basePerm(4)
-	fmt.Println(nextPerm(p))
-	// fmt.Println(*p)
-	// for i := 0; i < factorial(len(*p)); i++ {
-	// 	*p = nextPerm(*p)
-	// 	fmt.Println(*p)
+	ps := pointSet{
+		point{0, 0},
+		point{2, 2},
+		point{3, 1},
+		point{4, 2},
+	}
+	d, p := naiveSoln(ps)
+	fmt.Printf("Path: %v, Dist: %0.2f\n", p, d)
+	// n := 5
+	// p := basePerm(n)
+	// for i := 0; i < factorial(n); i++ {
+	// 	fmt.Printf("%v\n", p)
+	// 	p = nextPerm(p)
 	// }
 }
 
@@ -23,28 +31,23 @@ func factorial(n int) int {
 	return f
 }
 
-func removeCrossPaths(ps pointSet, perm permutation) {
-
-}
-
-func naiveSoln(ps pointSet) (minDist float64, minPerm permutation) {
-	// perm := basePerm(len(ps))
-	// base := copyPerm(perm)
-	// minPerm = copyPerm(perm)
-	// dist := 0.0
-	// minDist = math.MaxFloat64
-	// notEqual := true
-	// for notEqual {
-	// 	dist = totalSqDist(ps, perm)
-	// 	if dist < minDist {
-	// 		minDist = dist
-	// 		minPerm = copyPerm(perm)
-	// 	}
-	// 	perm = nextPerm(perm)
-	// 	if comparePerms(perm, base) {
-	// 		notEqual = false
-	// 	}
-	// }
-	// minDist = totalDist(ps, minPerm)
-	return minDist, minPerm
+func naiveSoln(ps pointSet) (float64, permutation) {
+	perm := basePerm(len(ps))  // Current permutation to try
+	base := copyPerm(perm)     // Used to check if all permutations have been tried
+	minPerm := copyPerm(perm)  // Permutation resulting in minimum distance
+	dist := 0.0                // Current distance
+	minDist := math.MaxFloat64 // Minimum distance found
+	for {
+		dist = totalSqDist(ps, perm)
+		fmt.Printf("%v %0.2f %v %0.2f\n", perm, dist, minPerm, minDist)
+		if dist < minDist {
+			minDist = dist
+			copy(minPerm, perm)
+		}
+		perm = nextPerm(perm)
+		if comparePerms(perm, base) {
+			break
+		}
+	}
+	return totalDist(ps, minPerm), minPerm
 }
