@@ -1,7 +1,19 @@
 package main
 
+import (
+	"math/rand"
+	"sort"
+	"time"
+)
+
 // permutation is an ordering on Z(n).
 type permutation []int
+
+// population is a set of permutations.
+type population struct {
+	perms  []permutation
+	points pointSet
+}
 
 // nextPerm returns the next lexicographical permutation. If
 // the current permutation is the last permutation, then the
@@ -33,15 +45,12 @@ func nextPerm(p permutation) permutation {
 		}
 	}
 
-	q := make(permutation, n)
-	copy(q, p)
-
 	// Swap p[k] and p[j].
+	q := copyPerm(p)
 	q[k], q[j] = q[j], q[k]
 
 	// Reverse p[k+1:].
-	a := k + 1
-	b := n - 1
+	a, b := k+1, n-1
 	for a < b {
 		q[a], q[b] = q[b], q[a]
 		a++
@@ -56,6 +65,18 @@ func basePerm(n int) permutation {
 	p := make(permutation, n)
 	for i := range p {
 		p[i] = i
+	}
+	return p
+}
+
+// randPerm returns a random permutation of length n.
+func randPerm(n int) permutation {
+	rand.Seed(int64(time.Now().Second()))
+	p := basePerm(n)
+	var a, b int
+	for i := 0; i < 3*n; i++ {
+		a, b = rand.Intn(n), rand.Intn(n)
+		p[a], p[b] = p[b], p[a]
 	}
 	return p
 }
@@ -97,13 +118,78 @@ func comparePerms(x, y permutation) bool {
 	return true
 }
 
-func nextPerm2(p permutation) {
-	facts := make([]int, len(p))
-	for i := range facts {
-		facts[i] = factorial(i)
+// **********************************************************************
+// Genetic algorithm functions
+// **********************************************************************
+
+// cross ...TODO
+func cross(x, y permutation) (permutation, permutation) {
+	n := len(x)
+	u, v := make(permutation, n), make(permutation, n)
+
+	// Method 1: swap ends on pivot
+	pivot := rand.Intn(n)
+	copy(u[:pivot], x[:pivot])
+	copy(v[:pivot], y[:pivot])
+	copy(u[pivot:], y[pivot:])
+	copy(v[pivot:], x[pivot:])
+
+	// Method 2: swap middle on start, end
+	// end := rand.Intn(n-1) + 1   // 0 < end < n
+	// start := rand.Intn(end + 1) // 0 <= start <= end
+	// copy(u[:start], x[:start])
+	// copy(u[start:end], y[start:end])
+	// copy(u[end:], x[end:])
+	// copy(v[:start], y[:start])
+	// copy(v[start:end], x[start:end])
+	// copy(v[end:], y[end:])
+
+	return u, v
+}
+
+// mutate ...TODO
+func mutate(p permutation) permutation {
+	n := len(p)
+	b := rand.Intn(n-1) + 1 // 0 < b < n
+	a := rand.Intn(b)       // 0 <= a < b
+	q := copyPerm(p)
+
+	// Reverse subsequence in permutation
+	for a < b {
+		q[a], q[b] = q[b], q[a]
+		a++
+		b--
 	}
-	p[len(p)-1] = 0
-	for i := 0; i < len(p)-1; i++ {
-		// d:=
+	return q
+}
+
+// reproduce ...TODO
+func reproduce(pop *population) *population {
+	sort.Sort(pop)
+	return pop
+}
+
+// randPopulation ...TODO
+func randPopulation(size int, ps pointSet) *population {
+	n := len(ps)
+	pop := &population{
+		perms: make([]permutation, n),
 	}
+	copy(pop.points, ps)
+	for i := range pop.perms {
+		pop.perms[i] = randPerm(n)
+	}
+	return pop
+}
+
+func (pop *population) Len() int {
+	return len(pop.perms)
+}
+
+func (pop *population) Less(i, j int) bool {
+	return totalDist(pop.points, pop.perms[i]) < totalDist(pop.points, pop.perms[j])
+}
+
+func (pop *population) Swap(i, j int) {
+	pop.perms[i], pop.perms[j] = pop.perms[j], pop.perms[i]
 }
