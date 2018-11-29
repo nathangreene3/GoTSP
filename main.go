@@ -6,9 +6,11 @@ import (
 )
 
 func main() {
-	ps := getPoints("fourpoints.csv")
-	d, p := naiveSoln(ps)
-	fmt.Printf("Path: %v, Dist: %0.2f\n", p, d)
+	// ps := getPoints("fourpoints.csv")
+	ps := getPoints("cities.csv")
+	// d, p := naiveSoln(ps)
+	d, p := geneticSoln(ps)
+	fmt.Printf("Path: %v\nDist: %0.2f\n", p, d)
 }
 
 // factorial returns n!
@@ -33,7 +35,6 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 	// Try all n! permutations and store the current best solution
 	for {
 		dist = totalSqDist(ps, perm)
-		fmt.Printf("%v %0.2f %v %0.2f\n", perm, dist, minPerm, minDist)
 		if dist < minDist {
 			minDist = dist
 			copy(minPerm, perm)
@@ -44,4 +45,15 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 		}
 	}
 	return totalDist(ps, minPerm), minPerm
+}
+
+func geneticSoln(ps pointSet) (float64, permutation) {
+	pop := randPopulation(1000, ps)
+	for i := 0; i < 10000; i++ {
+		pop = reproduce(pop, 0.10, 0.10)
+	}
+	if !isPerm(pop.perms[0]) {
+		fmt.Printf("not a permutation")
+	}
+	return totalDist(pop.points, pop.perms[0]), pop.perms[0]
 }

@@ -45,6 +45,28 @@ func getPoints(filename string) pointSet {
 	return pntSet
 }
 
+func copyPoint(p point) point {
+	q := make(point, len(p))
+	copy(q, p)
+	return q
+}
+
+func (p point) copyPoint() point {
+	return copyPoint(p)
+}
+
+func copyPointSet(ps pointSet) pointSet {
+	newps := make(pointSet, len(ps))
+	for i := range ps {
+		newps[i] = copyPoint(ps[i])
+	}
+	return newps
+}
+
+func (ps pointSet) copyPointSet() pointSet {
+	return copyPointSet(ps)
+}
+
 // sqDist returns the squared distance between two points.
 // Assumes the points are equal in dimension.
 func (p point) sqDist(q point) float64 {

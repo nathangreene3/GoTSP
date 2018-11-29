@@ -81,27 +81,18 @@ func randPerm(n int) permutation {
 	return p
 }
 
-// heapPermute is taken from Analysis of Algorithms, page 54.
-func heapPermute(a permutation, n int) permutation {
-	// TODO: make this functional.
-	if 0 < n {
-		for i := 0; i < n; i++ {
-			a = heapPermute(a, n-1)
-			if n%2 == 0 {
-				a[i], a[n-1] = a[n-1], a[i]
-			} else {
-				a[0], a[n-1] = a[n-1], a[0]
-			}
-		}
-	}
-	return a
-}
-
 // copyPerm returns a new permution copy.
 func copyPerm(x permutation) permutation {
 	y := make(permutation, len(x))
 	copy(y, x)
 	return y
+}
+
+// copyPerm returns a new permutation copy.
+func (p permutation) copyPerm() permutation {
+	q := make(permutation, len(p))
+	copy(q, p)
+	return q
 }
 
 // compareIntSlices returns true if the two slices are nil
@@ -118,40 +109,46 @@ func comparePerms(x, y permutation) bool {
 	return true
 }
 
-// **********************************************************************
-// Genetic algorithm functions
-// **********************************************************************
+func isPerm(a []int) bool {
+	sort.Ints(a)
+	for i := range a {
+		if i != a[i] {
+			return false
+		}
+	}
+	return true
+}
 
-// cross ...TODO
+/*
+*************************************************************************
+	Genetic algorithm functions
+*************************************************************************
+*/
+
+// cross returns two new permutions each leading with the values of x and
+// y but with trailing values of y and x. The pivot point is selected at
+// random. For example, [1,2,3,4] and [5,6,7,8] might be crossed at index
+// 1 returning [1,6,7,8] and [5,2,3,4].
 func cross(x, y permutation) (permutation, permutation) {
 	n := len(x)
 	u, v := make(permutation, n), make(permutation, n)
 
-	// Method 1: swap ends on pivot
+	// Swap ends on pivot
+	rand.Seed(int64(time.Now().Second()))
 	pivot := rand.Intn(n)
 	copy(u[:pivot], x[:pivot])
 	copy(v[:pivot], y[:pivot])
 	copy(u[pivot:], y[pivot:])
 	copy(v[pivot:], x[pivot:])
 
-	// Method 2: swap middle on start, end
-	// end := rand.Intn(n-1) + 1   // 0 < end < n
-	// start := rand.Intn(end + 1) // 0 <= start <= end
-	// copy(u[:start], x[:start])
-	// copy(u[start:end], y[start:end])
-	// copy(u[end:], x[end:])
-	// copy(v[:start], y[:start])
-	// copy(v[start:end], x[start:end])
-	// copy(v[end:], y[end:])
-
 	return u, v
 }
 
-// mutate ...TODO
+// mutate reverses a subsequence within a permutation. For example,
+// [1,2,3,4] might be mutated as [1,3,2,4], or even [3,2,1,4].
 func mutate(p permutation) permutation {
-	n := len(p)
-	b := rand.Intn(n-1) + 1 // 0 < b < n
-	a := rand.Intn(b)       // 0 <= a < b
+	b := rand.Intn(len(p)-1) + 1 // 0 < b < n
+	a := rand.Intn(b)            // 0 <= a < b
 	q := copyPerm(p)
 
 	// Reverse subsequence in permutation
@@ -160,25 +157,43 @@ func mutate(p permutation) permutation {
 		a++
 		b--
 	}
+
 	return q
 }
 
-// reproduce ...TODO
-func reproduce(pop *population) *population {
-	sort.Sort(pop)
-	return pop
+// reproduce
+func reproduce(pop *population, topPct, mutationRate float64) *population {
+	rand.Seed(int64(time.Now().Second()))
+	nextGen := copyPopulation(pop)
+	n := len(nextGen.perms)
+	for i := 0; i < int(topPct*float64(n)); i += 2 {
+		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = cross(nextGen.perms[i], nextGen.perms[i+1])
+		if rand.Float64() < mutationRate {
+			nextGen.perms[n-i-1], nextGen.perms[n-i-2] = mutate(nextGen.perms[n-i-1]), mutate(nextGen.perms[n-i-2])
+		}
+	}
+	sort.Sort(nextGen)
+
+	return nextGen
 }
 
-// randPopulation ...TODO
+// randPopulation returns a random population of a given size over a set
+// of points.
 func randPopulation(size int, ps pointSet) *population {
-	n := len(ps)
-	pop := &population{
-		perms: make([]permutation, n),
+	if size <= 0 {
+		panic("population size must be positive")
 	}
-	copy(pop.points, ps)
+
+	pop := &population{
+		perms:  make([]permutation, size),
+		points: copyPointSet(ps),
+	}
+
+	n := len(ps)
 	for i := range pop.perms {
 		pop.perms[i] = randPerm(n)
 	}
+
 	return pop
 }
 
@@ -192,4 +207,21 @@ func (pop *population) Less(i, j int) bool {
 
 func (pop *population) Swap(i, j int) {
 	pop.perms[i], pop.perms[j] = pop.perms[j], pop.perms[i]
+}
+
+// copyPopulation returns a copy of a given population.
+func copyPopulation(pop *population) *population {
+	newpop := &population{
+		perms:  make([]permutation, len(pop.perms)),
+		points: copyPointSet(pop.points),
+	}
+	for i := range newpop.perms {
+		newpop.perms[i] = copyPerm(pop.perms[i])
+	}
+
+	return newpop
+}
+
+func (pop *population) copyPopulation() *population {
+	return copyPopulation(pop)
 }
