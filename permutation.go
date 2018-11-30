@@ -1,9 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
-	"time"
+	"strings"
 )
 
 // permutation is an ordering on Z(n).
@@ -11,8 +12,8 @@ type permutation []int
 
 // population is a set of permutations.
 type population struct {
-	perms  []permutation
-	points pointSet
+	perms  []permutation // An ordering of points
+	points pointSet      // Set of points
 }
 
 // nextPerm returns the next lexicographical permutation. If
@@ -71,7 +72,6 @@ func basePerm(n int) permutation {
 
 // randPerm returns a random permutation of length n.
 func randPerm(n int) permutation {
-	rand.Seed(int64(time.Now().Second()))
 	p := basePerm(n)
 	var a, b int
 	for i := 0; i < 3*n; i++ {
@@ -88,13 +88,6 @@ func copyPerm(x permutation) permutation {
 	return y
 }
 
-// copyPerm returns a new permutation copy.
-func (p permutation) copyPerm() permutation {
-	q := make(permutation, len(p))
-	copy(q, p)
-	return q
-}
-
 // compareIntSlices returns true if the two slices are nil
 // or if they share the same length and values at each index.
 func comparePerms(x, y permutation) bool {
@@ -109,37 +102,39 @@ func comparePerms(x, y permutation) bool {
 	return true
 }
 
+// isPerm determines if an []int is a permutation.
 func isPerm(a []int) bool {
-	sort.Ints(a)
-	for i := range a {
-		if i != a[i] {
+	b := make([]int, len(a))
+	copy(b, a)
+	sort.Ints(b)
+	for i := range b {
+		if i != b[i] {
 			return false
 		}
 	}
 	return true
 }
 
-/*
-*************************************************************************
+/************************************************************************
 	Genetic algorithm functions
-*************************************************************************
-*/
+*************************************************************************/
 
 // cross returns two new permutions each leading with the values of x and
 // y but with trailing values of y and x. The pivot point is selected at
 // random. For example, [1,2,3,4] and [5,6,7,8] might be crossed at index
 // 1 returning [1,6,7,8] and [5,2,3,4].
-func cross(x, y permutation) (permutation, permutation) {
-	n := len(x)
+func cross(p, q permutation) (permutation, permutation) {
+	n := len(p)
 	u, v := make(permutation, n), make(permutation, n)
 
 	// Swap ends on pivot
-	rand.Seed(int64(time.Now().Second()))
 	pivot := rand.Intn(n)
-	copy(u[:pivot], x[:pivot])
-	copy(v[:pivot], y[:pivot])
-	copy(u[pivot:], y[pivot:])
-	copy(v[pivot:], x[pivot:])
+	copy(u, p)
+	copy(v, q)
+	for i := 0; i <= pivot; i++ {
+
+		u[i] = v[i]
+	}
 
 	return u, v
 }
@@ -163,14 +158,31 @@ func mutate(p permutation) permutation {
 
 // reproduce
 func reproduce(pop *population, topPct, mutationRate float64) *population {
-	rand.Seed(int64(time.Now().Second()))
 	nextGen := copyPopulation(pop)
 	n := len(nextGen.perms)
 	for i := 0; i < int(topPct*float64(n)); i += 2 {
 		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = cross(nextGen.perms[i], nextGen.perms[i+1])
+		if !isPerm(nextGen.perms[n-i-1]) {
+			fmt.Printf("reproduce made nextGen.perms[%d] into non-perm: %v\n", n-i-1, nextGen.perms[n-i-1])
+			if isPerm(nextGen.perms[i]) {
+				fmt.Printf("was a perm before: %v\n", nextGen.perms[i])
+			} else {
+				fmt.Printf("was not a perm before %v\n", nextGen.perms[i])
+			}
+		}
+		if !isPerm(nextGen.perms[n-i-2]) {
+			fmt.Printf("reproduce made nextGen.perms[%d] into non-perm: %v\n", n-i-1, nextGen.perms[n-i-2])
+			if isPerm(nextGen.perms[i]) {
+				fmt.Printf("it was a perm before: %v\n", nextGen.perms[i+1])
+			} else {
+				fmt.Printf("it was not a perm before %v\n", nextGen.perms[i+1])
+			}
+		}
 		if rand.Float64() < mutationRate {
+			fmt.Println("MUTATION! WOO!")
 			nextGen.perms[n-i-1], nextGen.perms[n-i-2] = mutate(nextGen.perms[n-i-1]), mutate(nextGen.perms[n-i-2])
 		}
+
 	}
 	sort.Sort(nextGen)
 
@@ -188,12 +200,10 @@ func randPopulation(size int, ps pointSet) *population {
 		perms:  make([]permutation, size),
 		points: copyPointSet(ps),
 	}
-
 	n := len(ps)
 	for i := range pop.perms {
 		pop.perms[i] = randPerm(n)
 	}
-
 	return pop
 }
 
@@ -202,7 +212,7 @@ func (pop *population) Len() int {
 }
 
 func (pop *population) Less(i, j int) bool {
-	return totalDist(pop.points, pop.perms[i]) < totalDist(pop.points, pop.perms[j])
+	return totalSqDist(pop.points, pop.perms[i]) < totalSqDist(pop.points, pop.perms[j])
 }
 
 func (pop *population) Swap(i, j int) {
@@ -218,10 +228,43 @@ func copyPopulation(pop *population) *population {
 	for i := range newpop.perms {
 		newpop.perms[i] = copyPerm(pop.perms[i])
 	}
-
 	return newpop
 }
 
-func (pop *population) copyPopulation() *population {
-	return copyPopulation(pop)
+func populationToString(pop *population, name string) string {
+	sb := strings.Builder{}
+	sb.WriteString(fmt.Sprintf("%s addr: %v\n", name, &pop))
+	sb.WriteString(fmt.Sprintf("dist: %0.2f\n", totalDist(pop.points, pop.perms[0])))
+	sb.WriteString(fmt.Sprintf("perms length: %v\n", len(pop.perms)))
+	for i := range pop.perms {
+		sb.WriteString(fmt.Sprintf("perm[%d]: %v\n", i, pop.perms[i]))
+	}
+	return sb.String()
+}
+
+func comparePopulations(p, q *population) bool {
+	if p == nil {
+		if q == nil {
+			return true
+		}
+		return false
+	}
+	if q == nil {
+		return false
+	}
+
+	if len(p.perms) != len(q.perms) {
+		return false
+	}
+	for i := range p.perms {
+		if !comparePerms(p.perms[i], q.perms[i]) {
+			return false
+		}
+	}
+
+	if !comparePointSets(p.points, q.points) {
+		return false
+	}
+
+	return true
 }

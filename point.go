@@ -18,11 +18,9 @@ type pointSet []point
 
 // getPoints returns a pointSet read from a CSV file.
 func getPoints(filename string) pointSet {
-	var (
-		pntSet pointSet
-		pnt    point
-		line   []string
-	)
+	var pntSet pointSet
+	var pnt point
+	var line []string
 	file, err := os.Open(filename)
 	reader := csv.NewReader(bufio.NewReader(file))
 	for {
@@ -43,6 +41,30 @@ func getPoints(filename string) pointSet {
 		pntSet = append(pntSet, pnt)
 	}
 	return pntSet
+}
+
+func comparePoints(p, q point) bool {
+	if len(p) != len(q) {
+		return false
+	}
+	for i := range p {
+		if p[i] != q[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func comparePointSets(p, q pointSet) bool {
+	if len(p) != len(q) {
+		return false
+	}
+	for i := range p {
+		if !comparePoints(p[i], q[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func copyPoint(p point) point {
@@ -112,7 +134,7 @@ func totalDist(ps pointSet, perm permutation) float64 {
 
 // totalSqDist returns the total squared distance traversed
 // across a path of points. A path is a permutation of
-// points. Assumes teh point set and the permutation are of
+// points. Assumes the point set and the permutation are of
 // equal dimension.
 func totalSqDist(ps pointSet, perm permutation) float64 {
 	n := len(ps)

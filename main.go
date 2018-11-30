@@ -2,24 +2,32 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"math/rand"
+	"time"
 )
 
 func main() {
-	// ps := getPoints("fourpoints.csv")
-	ps := getPoints("cities.csv")
-	// d, p := naiveSoln(ps)
-	d, p := geneticSoln(ps)
+	rand.Seed(int64(time.Now().UnixNano()))
+	d, p := geneticSoln(getPoints("fourpoints.csv"))
 	fmt.Printf("Path: %v\nDist: %0.2f\n", p, d)
 }
 
-// factorial returns n!
-func factorial(n int) int {
-	f := 1
-	for i := 2; i <= n; i++ {
-		f *= i
+func geneticSoln(ps pointSet) (float64, permutation) {
+	pop := randPopulation(4, ps)
+	for i := 0; i < 10; i++ {
+		for j := range pop.perms {
+			if !isPerm(pop.perms[j]) {
+				fmt.Printf("gen %d, index %d, path not a permution: %v\n", i, j, pop.perms[j])
+			}
+		}
+		pop = reproduce(pop, 0.25, 0.10)
 	}
-	return f
+	if !isPerm(pop.perms[0]) {
+		log.Fatalf("path not a permution%v\n", pop)
+	}
+	return totalDist(pop.points, pop.perms[0]), pop.perms[0]
 }
 
 // naiveSoln solves the TSP by generating all permuations
@@ -47,13 +55,11 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 	return totalDist(ps, minPerm), minPerm
 }
 
-func geneticSoln(ps pointSet) (float64, permutation) {
-	pop := randPopulation(1000, ps)
-	for i := 0; i < 10000; i++ {
-		pop = reproduce(pop, 0.10, 0.10)
+// factorial returns n!
+func factorial(n int) int {
+	f := 1
+	for i := 2; i <= n; i++ {
+		f *= i
 	}
-	if !isPerm(pop.perms[0]) {
-		fmt.Printf("not a permutation")
-	}
-	return totalDist(pop.points, pop.perms[0]), pop.perms[0]
+	return f
 }
