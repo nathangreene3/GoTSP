@@ -10,22 +10,17 @@ import (
 
 func main() {
 	rand.Seed(int64(time.Now().UnixNano()))
-	d, p := geneticSoln(getPoints("fourpoints.csv"))
+	d, p := geneticSoln(importPoints("cities.csv"))
 	fmt.Printf("Path: %v\nDist: %0.2f\n", p, d)
 }
 
 func geneticSoln(ps pointSet) (float64, permutation) {
-	pop := randPopulation(4, ps)
-	for i := 0; i < 10; i++ {
-		for j := range pop.perms {
-			if !isPerm(pop.perms[j]) {
-				fmt.Printf("gen %d, index %d, path not a permution: %v\n", i, j, pop.perms[j])
-			}
-		}
-		pop = reproduce(pop, 0.25, 0.10)
+	pop := randPopulation(10, ps)
+	for i := 0; i < 1000000; i++ {
+		pop = reproduce(pop, 0.50, 0.10)
 	}
-	if !isPerm(pop.perms[0]) {
-		log.Fatalf("path not a permution%v\n", pop)
+	if !isPermutation(pop.perms[0]) {
+		log.Fatalf("path not a permution: %v\n", pop.perms[0])
 	}
 	return totalDist(pop.points, pop.perms[0]), pop.perms[0]
 }
@@ -34,11 +29,11 @@ func geneticSoln(ps pointSet) (float64, permutation) {
 // lexicographically and returning the minimum distance and the
 // corresponding permutation.
 func naiveSoln(ps pointSet) (float64, permutation) {
-	perm := basePerm(len(ps))  // Current permutation to try
-	base := copyPerm(perm)     // Used to check if all permutations have been tried
-	minPerm := copyPerm(perm)  // Permutation resulting in minimum distance
-	dist := 0.0                // Current distance
-	minDist := math.MaxFloat64 // Minimum distance found
+	perm := basePermutation(len(ps)) // Current permutation to try
+	base := copyPermutation(perm)    // Used to check if all permutations have been tried
+	minPerm := copyPermutation(perm) // Permutation resulting in minimum distance
+	dist := 0.0                      // Current distance
+	minDist := math.MaxFloat64       // Minimum distance found
 
 	// Try all n! permutations and store the current best solution
 	for {
@@ -47,8 +42,8 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 			minDist = dist
 			copy(minPerm, perm)
 		}
-		perm = nextPerm(perm)
-		if comparePerms(perm, base) {
+		perm = nextPermutation(perm)
+		if comparePermutations(perm, base) {
 			break
 		}
 	}

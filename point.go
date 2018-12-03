@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // point is an ordered tuple of values.
@@ -16,13 +17,30 @@ type point []float64 // x = (x0, x1, ...)
 // pointSet is a set of points.
 type pointSet []point
 
-// getPoints returns a pointSet read from a CSV file.
-func getPoints(filename string) pointSet {
-	var pntSet pointSet
-	var pnt point
-	var line []string
+// importPoints returns a point set read from a CSV file.
+func importPoints(filename string) pointSet {
+	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
+		filename = filename + ".csv"
+	}
+
 	file, err := os.Open(filename)
+	if err != nil {
+		if _, ok := err.(*os.PathError); ok {
+			filename += ".csv"
+			file, err = os.Open(filename)
+			if err != nil {
+				log.Fatalf("'%s' not found", filename)
+			}
+		} else {
+			log.Fatalf("'%s' not found", filename)
+		}
+	}
+
 	reader := csv.NewReader(bufio.NewReader(file))
+
+	var ps pointSet
+	var p point
+	var line []string
 	for {
 		line, err = reader.Read()
 		if err != nil {
@@ -31,16 +49,16 @@ func getPoints(filename string) pointSet {
 			}
 			log.Fatal(err)
 		}
-		pnt = make(point, len(line))
+		p = make(point, len(line))
 		for i := range line {
-			pnt[i], err = strconv.ParseFloat(line[i], 64)
+			p[i], err = strconv.ParseFloat(line[i], 64)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-		pntSet = append(pntSet, pnt)
+		ps = append(ps, p)
 	}
-	return pntSet
+	return ps
 }
 
 func comparePoints(p, q point) bool {
@@ -189,4 +207,13 @@ func isBetween(x, a, b float64) bool {
 		return a <= x && x <= b
 	}
 	return b <= x && x <= a // Potentially, a == b == x
+}
+
+// orderBy ...TODO
+func orderBy(ps pointSet, p permutation) pointSet {
+	newps := copyPointSet(ps)
+	for i := range ps {
+		newps[i], newps[p[i]] = newps[p[i]], newps[i]
+	}
+	return newps
 }
