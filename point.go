@@ -208,12 +208,3 @@ func isBetween(x, a, b float64) bool {
 	}
 	return b <= x && x <= a // Potentially, a == b == x
 }
-
-// orderBy ...TODO
-func orderBy(ps pointSet, p permutation) pointSet {
-	newps := copyPointSet(ps)
-	for i := range ps {
-		newps[i], newps[p[i]] = newps[p[i]], newps[i]
-	}
-	return newps
-}

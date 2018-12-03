@@ -130,6 +130,16 @@ func (p permutation) index(v int) int {
 	return -1
 }
 
+// permutatePointSet returns a new point set ordered by a
+// given permutation. This does not sort the point set.
+func permutatePointSet(ps pointSet, p permutation) pointSet {
+	newps := make(pointSet, len(ps))
+	for i := range newps {
+		newps[i] = ps[p[i]]
+	}
+	return newps
+}
+
 // cross returns two new permutions each leading with the values of x and
 // y but with trailing values of y and x. Partially mapped crossover
 // (PMX) is used to ensure the returned permutations are actual
