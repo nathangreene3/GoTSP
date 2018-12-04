@@ -110,9 +110,17 @@ func isPermutation(a []int) bool {
 	}
 	for i := range a {
 		m[a[i]]++
+		if 1 < m[a[i]] {
+			return false
+		}
 	}
-	for _, v := range m {
-		if v != 1 {
+	return true
+}
+
+// isBase returns true if a given permutation is the base permutation.
+func isBase(p permutation) bool {
+	for i := range p {
+		if p[i] != i {
 			return false
 		}
 	}
@@ -207,14 +215,18 @@ func randPopulation(size int, ps pointSet) *population {
 	return pop
 }
 
+// Len returns the size of the population (number of permutations).
 func (pop *population) Len() int {
 	return len(pop.perms)
 }
 
+// Less returns true if a permutation i gives a smaller total squared
+// distance than a permutation j.
 func (pop *population) Less(i, j int) bool {
 	return totalSqDist(pop.points, pop.perms[i]) < totalSqDist(pop.points, pop.perms[j])
 }
 
+// Swap swaps two permutations i and j.
 func (pop *population) Swap(i, j int) {
 	pop.perms[i], pop.perms[j] = pop.perms[j], pop.perms[i]
 }
@@ -231,6 +243,8 @@ func copyPopulation(pop *population) *population {
 	return newpop
 }
 
+// populationToString returns a formatted string representation of a
+// given population.
 func populationToString(pop *population, name string) string {
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s addr: %v\n", name, &pop))
@@ -242,20 +256,22 @@ func populationToString(pop *population, name string) string {
 	return sb.String()
 }
 
+// comparePopulations determines if two populations contain equal values.
 func comparePopulations(p, q *population) bool {
 	if p == nil {
 		if q == nil {
-			return true
+			return true // p and q are nil
 		}
-		return false
+		return false // p is nil, q is not
 	}
 	if q == nil {
-		return false
+		return false // p is not nil, q is
 	}
 
 	if len(p.perms) != len(q.perms) {
 		return false
 	}
+
 	for i := range p.perms {
 		if !comparePermutations(p.perms[i], q.perms[i]) {
 			return false
