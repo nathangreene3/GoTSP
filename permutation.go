@@ -63,21 +63,24 @@ func nextPermutation(p permutation) permutation {
 
 // basePermutation returns the base permutation (012...n-1).
 func basePermutation(n int) permutation {
-	p := make(permutation, n)
-	for i := range p {
-		p[i] = i
+	p := make(permutation, 0, n)
+	for i := 0; i < n; i++ {
+		p = append(p, i)
 	}
+
 	return p
 }
 
 // randPermutation returns a random permutation of length n.
 func randPermutation(n int) permutation {
-	p := basePermutation(n)
-	var a, b int
-	for i := 0; i < 3*n; i++ {
-		a, b = rand.Intn(n), rand.Intn(n)
-		p[a], p[b] = p[b], p[a]
+	p := make(permutation, n)
+	var j int
+	for i := range p {
+		j = rand.Intn(i + 1)
+		p[i] = p[j]
+		p[j] = i
 	}
+
 	return p
 }
 
@@ -94,11 +97,13 @@ func comparePermutations(p, q permutation) bool {
 	if len(p) != len(q) {
 		return false
 	}
+
 	for i := range p {
 		if p[i] != q[i] {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -108,12 +113,14 @@ func isPermutation(a []int) bool {
 	for i := range a {
 		m[a[i]] = 0
 	}
+
 	for i := range a {
 		m[a[i]]++
 		if 1 < m[a[i]] {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -124,6 +131,7 @@ func isBase(p permutation) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -135,6 +143,7 @@ func (p permutation) index(v int) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -145,6 +154,7 @@ func permutatePointSet(ps pointSet, p permutation) pointSet {
 	for i := range newps {
 		newps[i] = ps[p[i]]
 	}
+
 	return newps
 }
 
@@ -159,12 +169,14 @@ func cross(p, q permutation) (permutation, permutation) {
 	u := copyPermutation(p)
 	v := copyPermutation(q)
 	pivot := rand.Intn(len(p))
+
 	for i := 0; i <= pivot; i++ {
 		u[u.index(q[i])] = u[i]
 		u[i] = q[i]
 		v[v.index(p[i])] = v[i]
 		v[i] = p[i]
 	}
+
 	return u, v
 }
 
@@ -174,11 +186,13 @@ func mutate(p permutation, ps pointSet) permutation {
 	q := copyPermutation(p)
 	b := rand.Intn(len(p)-1) + 1 // 0 < b < n
 	a := rand.Intn(b)            // 0 <= a < b
+
 	for a < b {
 		q[a], q[b] = q[b], q[a]
 		a++
 		b--
 	}
+
 	return q
 }
 
@@ -186,6 +200,7 @@ func mutate(p permutation, ps pointSet) permutation {
 func reproduce(pop *population, topPct, mutationRate float64) *population {
 	nextGen := copyPopulation(pop)
 	n := len(nextGen.perms)
+
 	for i := 0; i < int(topPct*float64(n)); i += 2 {
 		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = cross(nextGen.perms[i], nextGen.perms[i+1])
 		if rand.Float64() < mutationRate {
@@ -193,6 +208,7 @@ func reproduce(pop *population, topPct, mutationRate float64) *population {
 			nextGen.perms[n-i-2] = mutate(nextGen.perms[n-i-2], nextGen.points)
 		}
 	}
+
 	sort.Sort(nextGen)
 	return nextGen
 }
@@ -205,13 +221,15 @@ func randPopulation(size int, ps pointSet) *population {
 	}
 
 	pop := &population{
-		perms:  make([]permutation, size),
+		perms:  make([]permutation, 0, size),
 		points: copyPointSet(ps),
 	}
+
 	n := len(ps)
-	for i := range pop.perms {
-		pop.perms[i] = randPermutation(n)
+	for i := 0; i < size; i++ {
+		pop.perms = append(pop.perms, randPermutation(n))
 	}
+
 	return pop
 }
 
@@ -234,12 +252,14 @@ func (pop *population) Swap(i, j int) {
 // copyPopulation returns a copy of a given population.
 func copyPopulation(pop *population) *population {
 	newpop := &population{
-		perms:  make([]permutation, len(pop.perms)),
+		perms:  make([]permutation, 0, len(pop.perms)),
 		points: copyPointSet(pop.points),
 	}
-	for i := range newpop.perms {
-		newpop.perms[i] = copyPermutation(pop.perms[i])
+
+	for i := 0; i < pop.Len(); i++ {
+		newpop.perms = append(newpop.perms, copyPermutation(pop.perms[i]))
 	}
+
 	return newpop
 }
 
@@ -250,19 +270,18 @@ func populationToString(pop *population, name string) string {
 	sb.WriteString(fmt.Sprintf("%s addr: %v\n", name, &pop))
 	sb.WriteString(fmt.Sprintf("dist: %0.2f\n", totalDist(pop.points, pop.perms[0])))
 	sb.WriteString(fmt.Sprintf("perms length: %v\n", len(pop.perms)))
+
 	for i := range pop.perms {
 		sb.WriteString(fmt.Sprintf("perm[%d]: %v\n", i, pop.perms[i]))
 	}
+
 	return sb.String()
 }
 
 // comparePopulations determines if two populations contain equal values.
 func comparePopulations(p, q *population) bool {
 	if p == nil {
-		if q == nil {
-			return true // p and q are nil
-		}
-		return false // p is nil, q is not
+		return q == nil
 	}
 	if q == nil {
 		return false // p is not nil, q is
@@ -283,4 +302,31 @@ func comparePopulations(p, q *population) bool {
 	}
 
 	return true
+}
+
+// export: TODO
+func (p permutation) export(filename string) error {
+	// if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
+	// 	filename = filename + ".csv"
+	// }
+
+	// file, err := os.Open(filename)
+	// if err != nil {
+	// 	if _, ok := err.(*os.PathError); ok {
+	// 		filename += ".csv"
+	// 		file, err = os.Open(filename)
+	// 		if err != nil {
+	// 			log.Fatalf("'%s' not found", filename)
+	// 		}
+	// 	} else {
+	// 		log.Fatalf("'%s' not found", filename)
+	// 	}
+	// }
+
+	// writer := csv.NewWriter(bufio.NewWriter(file))
+
+	// err = writer.Write([]string(p))
+
+	// return err
+	return nil
 }

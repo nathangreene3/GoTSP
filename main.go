@@ -25,9 +25,11 @@ func geneticSoln(ps pointSet) (float64, permutation) {
 	for i := 0; i < 1000000; i++ {
 		pop = reproduce(pop, 0.50, 0.25)
 	}
+
 	if !isPermutation(pop.perms[0]) {
 		log.Fatalf("path not a permution: %v\n", pop.perms[0])
 	}
+
 	return totalDist(pop.points, pop.perms[0]), pop.perms[0]
 }
 
@@ -47,11 +49,13 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 			minDist = dist
 			minPerm = copyPermutation(perm)
 		}
+
 		perm = nextPermutation(perm)
 		if isBase(perm) {
 			break
 		}
 	}
+
 	return totalDist(ps, minPerm), minPerm
 }
 
@@ -61,5 +65,6 @@ func factorial(n int) int {
 	for i := 2; i <= n; i++ {
 		f *= i
 	}
+
 	return f
 }
