@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"math/rand"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -16,9 +21,39 @@ type population struct {
 	points pointSet      // Set of points
 }
 
-// nextPermutation returns the next lexicographical permutation. If
-// the current permutation is the last permutation, then the
-// base permutation is returned.
+// breedFunc returns two new permutations bred from two given permutations.
+type breedFunc func(permutation, permutation) (permutation, permutation)
+
+// mutateFunc returns a new permutation altered from the given permutation on a
+// given point set.
+type mutateFunc func(permutation, pointSet) permutation
+
+func (p permutation) String() string {
+	n := len(p)
+	sb := strings.Builder{}
+	sb.Grow(n)
+
+	sb.WriteString("[" + strconv.Itoa(p[0]))
+	for i := 1; i < n; i++ {
+		sb.WriteString("," + strconv.Itoa(p[i]))
+	}
+	sb.WriteByte(']')
+
+	return sb.String()
+}
+
+// basePermutation returns the base permutation (012...n-1).
+func basePermutation(n int) permutation {
+	p := make(permutation, 0, n)
+	for i := 0; i < n; i++ {
+		p = append(p, i)
+	}
+
+	return p
+}
+
+// nextPermutation returns the next lexicographical permutation. If the current
+// permutation is the last permutation, then the base permutation is returned.
 func nextPermutation(p permutation) permutation {
 	// Find largest index k such that p[k] < p[k+1]. If k
 	// remains -1, p is the final lexicographical
@@ -61,16 +96,6 @@ func nextPermutation(p permutation) permutation {
 	return q
 }
 
-// basePermutation returns the base permutation (012...n-1).
-func basePermutation(n int) permutation {
-	p := make(permutation, 0, n)
-	for i := 0; i < n; i++ {
-		p = append(p, i)
-	}
-
-	return p
-}
-
 // randPermutation returns a random permutation of length n.
 func randPermutation(n int) permutation {
 	p := make(permutation, n)
@@ -91,8 +116,8 @@ func copyPermutation(p permutation) permutation {
 	return q
 }
 
-// compareIntSlices returns true if the two slices are nil
-// or if they share the same length and values at each index.
+// compareIntSlices returns true if the two slices are nil or if they share the
+// same length and values at each index.
 func comparePermutations(p, q permutation) bool {
 	if len(p) != len(q) {
 		return false
@@ -135,8 +160,8 @@ func isBase(p permutation) bool {
 	return true
 }
 
-// index returns the first index of a value in a given permutation. If
-// not found, -1 is returned.
+// index returns the first index of a value in a given permutation. If not found,
+// -1 is returned.
 func (p permutation) index(v int) int {
 	for i := range p {
 		if p[i] == v {
@@ -147,8 +172,8 @@ func (p permutation) index(v int) int {
 	return -1
 }
 
-// permutatePointSet returns a new point set ordered by a
-// given permutation. This does not sort the point set.
+// permutatePointSet returns a new point set ordered by a given permutation. This
+// does not sort the point set.
 func permutatePointSet(ps pointSet, p permutation) pointSet {
 	newps := make(pointSet, len(ps))
 	for i := range newps {
@@ -158,12 +183,11 @@ func permutatePointSet(ps pointSet, p permutation) pointSet {
 	return newps
 }
 
-// cross returns two new permutions each leading with the values of x and
-// y but with trailing values of y and x. Partially mapped crossover
-// (PMX) is used to ensure the returned permutations are actual
-// permutations. The pivot point is selected at random. For example,
-// [1,2,3,4] and [5,6,7,8] might be crossed at index 1 returning
-// [1,6,7,8] and [5,2,3,4].
+// cross returns two new permutions each leading with the values of x and y but
+// with trailing values of y and x. Partially mapped crossover (PMX) is used to
+// ensure the returned permutations are actual permutations. The pivot point is
+// selected at random. For example, [1,2,3,4] and [5,6,7,8] might be crossed at
+// index 1 returning [1,6,7,8] and [5,2,3,4].
 // Source: http://user.ceng.metu.edu.tr/~ucoluk/research/publications/tspnew.pdf
 func cross(p, q permutation) (permutation, permutation) {
 	u := copyPermutation(p)
@@ -180,8 +204,8 @@ func cross(p, q permutation) (permutation, permutation) {
 	return u, v
 }
 
-// mutate reverses a subsequence within a permutation. For example,
-// [1,2,3,4] might be mutated as [1,3,2,4], or even [3,2,1,4].
+// mutate reverses a subsequence within a permutation. For example, [1,2,3,4]
+// might be mutated as [1,3,2,4], or even [3,2,1,4].
 func mutate(p permutation, ps pointSet) permutation {
 	q := copyPermutation(p)
 	b := rand.Intn(len(p)-1) + 1 // 0 < b < n
@@ -196,16 +220,19 @@ func mutate(p permutation, ps pointSet) permutation {
 	return q
 }
 
-// reproduce
-func reproduce(pop *population, topPct, mutationRate float64) *population {
+// reproduce returns a new population as the next generation. The top percent of
+// the population gets to reproduce with the possibility of a mutation occurring
+// at a given rate. The population size will remain constant. The next generation
+// will be returned sorted.
+func reproduce(pop *population, topPct, mutationRate float64, f mutateFunc, g breedFunc) *population {
 	nextGen := copyPopulation(pop)
 	n := len(nextGen.perms)
 
 	for i := 0; i < int(topPct*float64(n)); i += 2 {
 		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = cross(nextGen.perms[i], nextGen.perms[i+1])
 		if rand.Float64() < mutationRate {
-			nextGen.perms[n-i-1] = mutate(nextGen.perms[n-i-1], nextGen.points)
-			nextGen.perms[n-i-2] = mutate(nextGen.perms[n-i-2], nextGen.points)
+			nextGen.perms[n-i-1] = f(nextGen.perms[n-i-1], nextGen.points)
+			nextGen.perms[n-i-2] = f(nextGen.perms[n-i-2], nextGen.points)
 		}
 	}
 
@@ -227,7 +254,7 @@ func randPopulation(size int, ps pointSet) *population {
 
 	n := len(ps)
 	for i := 0; i < size; i++ {
-		pop.perms = append(pop.perms, randPermutation(n))
+		pop.perms = append(pop.perms, rand.Perm(n))
 	}
 
 	return pop
@@ -238,8 +265,8 @@ func (pop *population) Len() int {
 	return len(pop.perms)
 }
 
-// Less returns true if a permutation i gives a smaller total squared
-// distance than a permutation j.
+// Less returns true if a permutation i gives a smaller total squared distance
+// than a permutation j.
 func (pop *population) Less(i, j int) bool {
 	return totalSqDist(pop.points, pop.perms[i]) < totalSqDist(pop.points, pop.perms[j])
 }
@@ -263,8 +290,8 @@ func copyPopulation(pop *population) *population {
 	return newpop
 }
 
-// populationToString returns a formatted string representation of a
-// given population.
+// populationToString returns a formatted string representation of a given
+// population.
 func populationToString(pop *population, name string) string {
 	sb := strings.Builder{}
 	sb.WriteString(fmt.Sprintf("%s addr: %v\n", name, &pop))
@@ -304,29 +331,60 @@ func comparePopulations(p, q *population) bool {
 	return true
 }
 
-// export: TODO
-func (p permutation) export(filename string) error {
-	// if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
-	// 	filename = filename + ".csv"
-	// }
+func importPermutation(filename string) (permutation, error) {
+	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
+		filename += ".csv"
+	}
 
-	// file, err := os.Open(filename)
-	// if err != nil {
-	// 	if _, ok := err.(*os.PathError); ok {
-	// 		filename += ".csv"
-	// 		file, err = os.Open(filename)
-	// 		if err != nil {
-	// 			log.Fatalf("'%s' not found", filename)
-	// 		}
-	// 	} else {
-	// 		log.Fatalf("'%s' not found", filename)
-	// 	}
-	// }
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-	// writer := csv.NewWriter(bufio.NewWriter(file))
+	reader := csv.NewReader(bufio.NewReader(file))
+	var p permutation
+	var line []string
+	var v int64
 
-	// err = writer.Write([]string(p))
+	for {
+		line, err = reader.Read()
+		if err != nil {
+			if err == io.EOF {
+				return p, nil
+			}
+			return nil, err
+		}
 
-	// return err
-	return nil
+		p = make(permutation, 0, len(line))
+		for i := range line {
+			v, err = strconv.ParseInt(line[i], 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			p = append(p, int(v))
+		}
+	}
+}
+
+// export: TODO writes a permutation to a given file.
+func (p permutation) exportPermutation(filename string) error {
+	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
+		filename += ".csv"
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		file, err = os.Create(filename)
+		if err != nil {
+			return err
+		}
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush() // Currently isn't writing anything
+
+	return writer.Write([]string{p.String()})
 }
