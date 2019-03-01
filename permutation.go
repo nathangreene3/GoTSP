@@ -135,9 +135,6 @@ func comparePermutations(p, q permutation) bool {
 // isPermutation determines if an []int is a permutation.
 func isPermutation(a []int) bool {
 	m := make(map[int]int)
-	for i := range a {
-		m[a[i]] = 0
-	}
 
 	for i := range a {
 		m[a[i]]++
@@ -374,7 +371,7 @@ func (p permutation) exportPermutation(filename string) error {
 		filename += ".csv"
 	}
 
-	file, err := os.Open(filename)
+	file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		file, err = os.Create(filename)
 		if err != nil {
@@ -383,8 +380,17 @@ func (p permutation) exportPermutation(filename string) error {
 	}
 	defer file.Close()
 
-	writer := csv.NewWriter(file)
-	defer writer.Flush() // Currently isn't writing anything
+	output := make([]string, 0, len(p))
+	for i := range p {
+		output = append(output, strconv.Itoa(p[i]))
+	}
 
-	return writer.Write([]string{p.String()})
+	writer := csv.NewWriter(file)
+	err = writer.Write(output)
+	if err != nil {
+		return err
+	}
+	writer.Flush()
+
+	return writer.Error()
 }

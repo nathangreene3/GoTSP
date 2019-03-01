@@ -24,7 +24,15 @@ func main() {
 // Reproduction is determined by elitism. The minimum distance found and the
 // corresponding permutation are returned.
 func geneticSoln(ps pointSet, popSize int, generations int, f mutateFunc, g breedFunc) (float64, permutation) {
-	pop := randPopulation(popSize, ps)
+	pop := randPopulation(popSize-1, ps)
+
+	currentBest, err := importPermutation("bestsolution.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pop.perms = append(pop.perms, currentBest)
+
 	for i := 0; i < generations; i++ {
 		pop = reproduce(pop, 0.50, 0.25, f, g)
 	}
@@ -34,7 +42,7 @@ func geneticSoln(ps pointSet, popSize int, generations int, f mutateFunc, g bree
 		log.Fatalf("path not a permution: %v\n", p)
 	}
 
-	err := p.exportPermutation("bestsolution.csv")
+	err = p.exportPermutation("bestsolution.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
