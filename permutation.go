@@ -17,8 +17,9 @@ type permutation []int
 
 // population is a set of permutations.
 type population struct {
-	perms  []permutation // An ordering of points
-	points pointSet      // Set of points
+	perms        []permutation // An ordering of points
+	shortestPerm permutation   // Best solution in this population
+	points       pointSet      // Set of points
 }
 
 // breedFunc returns two new permutations bred from two given permutations.
@@ -234,12 +235,19 @@ func reproduce(pop *population, topPct, mutationRate float64, f mutateFunc, g br
 	}
 
 	sort.Sort(nextGen)
+	if totalDist(nextGen.points, nextGen.perms[0]) < totalDist(nextGen.points, nextGen.shortestPerm) {
+		nextGen.shortestPerm = copyPermutation(nextGen.perms[0])
+	}
+
 	return nextGen
 }
 
 // randPopulation returns a random population of a given size over a set
 // of points.
 func randPopulation(size int, ps pointSet) *population {
+	if ps == nil || len(ps) == 0 {
+		panic("pointSet must have at least one point")
+	}
 	if size <= 0 {
 		panic("population size must be positive")
 	}
@@ -254,30 +262,18 @@ func randPopulation(size int, ps pointSet) *population {
 		pop.perms = append(pop.perms, rand.Perm(n))
 	}
 
+	sort.Sort(pop)
+	pop.shortestPerm = copyPermutation(pop.perms[0])
+
 	return pop
-}
-
-// Len returns the size of the population (number of permutations).
-func (pop *population) Len() int {
-	return len(pop.perms)
-}
-
-// Less returns true if a permutation i gives a smaller total squared distance
-// than a permutation j.
-func (pop *population) Less(i, j int) bool {
-	return totalSqDist(pop.points, pop.perms[i]) < totalSqDist(pop.points, pop.perms[j])
-}
-
-// Swap swaps two permutations i and j.
-func (pop *population) Swap(i, j int) {
-	pop.perms[i], pop.perms[j] = pop.perms[j], pop.perms[i]
 }
 
 // copyPopulation returns a copy of a given population.
 func copyPopulation(pop *population) *population {
 	newpop := &population{
-		perms:  make([]permutation, 0, len(pop.perms)),
-		points: copyPointSet(pop.points),
+		perms:        make([]permutation, 0, len(pop.perms)),
+		shortestPerm: copyPermutation(pop.shortestPerm),
+		points:       copyPointSet(pop.points),
 	}
 
 	for i := 0; i < pop.Len(); i++ {
@@ -307,6 +303,7 @@ func comparePopulations(p, q *population) bool {
 	if p == nil {
 		return q == nil
 	}
+
 	if q == nil {
 		return false // p is not nil, q is
 	}
@@ -321,6 +318,10 @@ func comparePopulations(p, q *population) bool {
 		}
 	}
 
+	if !comparePermutations(p.shortestPerm, q.shortestPerm) {
+		return false
+	}
+
 	if !comparePointSets(p.points, q.points) {
 		return false
 	}
@@ -328,6 +329,7 @@ func comparePopulations(p, q *population) bool {
 	return true
 }
 
+// importPermutation retrieves a permutation from a given csv file.
 func importPermutation(filename string) (permutation, error) {
 	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
 		filename += ".csv"
@@ -365,7 +367,8 @@ func importPermutation(filename string) (permutation, error) {
 	}
 }
 
-// export: TODO writes a permutation to a given file.
+// export writes a permutation to a given file. The file contents will be
+// overwritten if it exists and will be created if it doesn't exist.
 func (p permutation) exportPermutation(filename string) error {
 	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
 		filename += ".csv"
@@ -393,4 +396,20 @@ func (p permutation) exportPermutation(filename string) error {
 	writer.Flush()
 
 	return writer.Error()
+}
+
+// Len returns the size of the population (number of permutations).
+func (pop *population) Len() int {
+	return len(pop.perms)
+}
+
+// Less returns true if a permutation i gives a smaller total squared distance
+// than a permutation j.
+func (pop *population) Less(i, j int) bool {
+	return totalDist(pop.points, pop.perms[i]) < totalDist(pop.points, pop.perms[j])
+}
+
+// Swap swaps two permutations i and j.
+func (pop *population) Swap(i, j int) {
+	pop.perms[i], pop.perms[j] = pop.perms[j], pop.perms[i]
 }

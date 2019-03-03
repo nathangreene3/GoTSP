@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -15,7 +16,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	d, p := geneticSoln(ps, 10, 1000000, mutate, cross)
+
 	fmt.Printf("Path: %v\nDist: %0.2f\n", p, d)
 }
 
@@ -24,30 +27,40 @@ func main() {
 // Reproduction is determined by elitism. The minimum distance found and the
 // corresponding permutation are returned.
 func geneticSoln(ps pointSet, popSize int, generations int, f mutateFunc, g breedFunc) (float64, permutation) {
-	pop := randPopulation(popSize-1, ps)
-
 	currentBest, err := importPermutation("bestsolution.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	pop.perms = append(pop.perms, currentBest)
+	if currentBest == nil {
+		currentBest = randPermutation(len(ps))
+	}
+
+	pop := randPopulation(popSize, ps)
+	// if totalDist(ps, pop.shortestPerm) < totalDist(ps, currentBest) {
+	pop.shortestPerm = copyPermutation(currentBest)
+	// }
 
 	for i := 0; i < generations; i++ {
 		pop = reproduce(pop, 0.50, 0.25, f, g)
 	}
 
-	p := pop.perms[0]
-	if !isPermutation(p) {
-		log.Fatalf("path not a permution: %v\n", p)
+	dists := make([]string, 0, pop.Len())
+	for i := range pop.perms {
+		dists = append(dists, fmt.Sprintf("%0.2f", totalDist(pop.points, pop.perms[i])))
+	}
+	fmt.Println(strings.Join(dists, " "))
+
+	if !isPermutation(pop.shortestPerm) {
+		log.Fatalf("path not a permution: %v\n", pop.shortestPerm)
 	}
 
-	err = p.exportPermutation("bestsolution.csv")
+	err = pop.shortestPerm.exportPermutation("bestsolution.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return totalDist(pop.points, p), p
+	return totalDist(pop.points, pop.shortestPerm), pop.shortestPerm
 }
 
 // naiveSoln solves the TSP by generating all permuations lexicographically and

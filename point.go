@@ -40,6 +40,7 @@ func importPoints(filename string) (pointSet, error) {
 			if err == io.EOF {
 				return ps, nil
 			}
+
 			return nil, err
 		}
 
@@ -91,6 +92,7 @@ func comparePointSets(p, q pointSet) bool {
 func copyPoint(p point) point {
 	q := make(point, len(p))
 	copy(q, p)
+
 	return q
 }
 
