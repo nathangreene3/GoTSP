@@ -184,10 +184,10 @@ func permutatePointSet(ps pointSet, p permutation) pointSet {
 // cross returns two new permutions each leading with the values of x and y but
 // with trailing values of y and x. Partially mapped crossover (PMX) is used to
 // ensure the returned permutations are actual permutations. The pivot point is
-// selected at random. For example, [1,2,3,4] and [5,6,7,8] might be crossed at
-// index 1 returning [1,6,7,8] and [5,2,3,4].
-// Source: http://user.ceng.metu.edu.tr/~ucoluk/research/publications/tspnew.pdf
+// selected at random.
 func cross(p, q permutation) (permutation, permutation) {
+	// Source: http://user.ceng.metu.edu.tr/~ucoluk/research/publications/tspnew.pdf
+
 	u := copyPermutation(p)
 	v := copyPermutation(q)
 	pivot := rand.Intn(len(p))
@@ -195,6 +195,7 @@ func cross(p, q permutation) (permutation, permutation) {
 	for i := 0; i <= pivot; i++ {
 		u[u.index(q[i])] = u[i]
 		u[i] = q[i]
+
 		v[v.index(p[i])] = v[i]
 		v[i] = p[i]
 	}
@@ -202,9 +203,9 @@ func cross(p, q permutation) (permutation, permutation) {
 	return u, v
 }
 
-// mutate reverses a subsequence within a permutation. For example, [1,2,3,4]
+// reverseSubsequence reverses a subsequence within a permutation. For example, [1,2,3,4]
 // might be mutated as [1,3,2,4], or even [3,2,1,4].
-func mutate(p permutation, ps pointSet) permutation {
+func reverseSubsequence(p permutation, ps pointSet) permutation {
 	q := copyPermutation(p)
 	b := rand.Intn(len(p)-1) + 1 // 0 < b < n
 	a := rand.Intn(b)            // 0 <= a < b
@@ -235,7 +236,7 @@ func reproduce(pop *population, topPct, mutationRate float64, f mutateFunc, g br
 	}
 
 	sort.Sort(nextGen)
-	if totalSqDist(nextGen.points, nextGen.perms[0]) < totalSqDist(nextGen.points, nextGen.shortestPerm) {
+	if totalDist(nextGen.points, nextGen.perms[0]) < totalDist(nextGen.points, nextGen.shortestPerm) {
 		nextGen.shortestPerm = copyPermutation(nextGen.perms[0])
 	}
 
@@ -403,10 +404,10 @@ func (pop *population) Len() int {
 	return len(pop.perms)
 }
 
-// Less returns true if a permutation i gives a smaller total squared distance
-// than a permutation j.
+// Less returns true if a permutation i gives a smaller total distance than a
+// permutation j.
 func (pop *population) Less(i, j int) bool {
-	return totalSqDist(pop.points, pop.perms[i]) < totalSqDist(pop.points, pop.perms[j])
+	return totalDist(pop.points, pop.perms[i]) < totalDist(pop.points, pop.perms[j])
 }
 
 // Swap swaps two permutations i and j.

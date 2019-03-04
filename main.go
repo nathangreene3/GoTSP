@@ -17,9 +17,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	d, p := geneticSoln(ps, 10, 1000000, mutate, cross)
+	dist, perm := geneticSoln(ps, 10, 1000000, reverseSubsequence, cross)
 
-	fmt.Printf("Path: %v\nDist: %0.2f\n", p, d)
+	fmt.Printf("Path: %v\nDist: %0.2f\n", perm, dist)
 }
 
 // geneticSoln solves the TSP by generating a population of permutations, then
@@ -71,7 +71,7 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 
 	// Try all n! permutations and store the current best solution
 	for {
-		dist = totalSqDist(ps, perm)
+		dist = totalDist(ps, perm)
 		if dist < minDist {
 			minDist = dist
 			minPerm = copyPermutation(perm)
@@ -83,10 +83,10 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 		}
 	}
 
-	return totalDist(ps, minPerm), minPerm
+	return minDist, minPerm
 }
 
-// factorial returns n!
+// factorial returns n! Returns 1 for all n < 2.
 func factorial(n int) int {
 	f := 1
 	for i := 2; i <= n; i++ {

@@ -130,10 +130,10 @@ func (p point) sqDist(q point) float64 {
 
 // sqDist returns the squared distance between two points. Assumes the points are
 // equal in dimension.
-func sqDist(p0, p1 point) float64 {
+func sqDist(p, q point) float64 {
 	var d, t float64
-	for i := range p0 {
-		t = p1[i] - p0[i]
+	for i := range p {
+		t = q[i] - p[i]
 		d += t * t
 	}
 
@@ -146,8 +146,8 @@ func (p point) dist(q point) float64 {
 }
 
 // dist returns the distance between two points.
-func dist(p0, p1 point) float64 {
-	return math.Sqrt(sqDist(p0, p1))
+func dist(p, q point) float64 {
+	return math.Sqrt(sqDist(p, q))
 }
 
 // totalDist returns the total distance traversed across a path of points. A path
@@ -163,23 +163,10 @@ func totalDist(ps pointSet, perm permutation) float64 {
 	return d
 }
 
-// totalSqDist returns the total squared distance traversed across a path of
-// points. A path is a permutation of points. Assumes the point set and the
-// permutation are of equal dimension.
-func totalSqDist(ps pointSet, perm permutation) float64 {
-	n := len(ps)
-	d := sqDist(ps[perm[0]], ps[perm[n-1]])
-	for i := 0; i < n-1; i++ {
-		d += sqDist(ps[perm[i]], ps[perm[i+1]])
-	}
-
-	return d
-}
-
 // lineThrough returns a function that is the line passing through two points.
 // Assumes the points are two dimensional.
-func lineThrough(x0, x1 point) func(x float64) float64 {
-	return func(x float64) float64 { return (x1[1]-x0[1])*(x-x0[0])/(x1[0]-x0[0]) + x0[1] }
+func lineThrough(p, q point) func(x float64) float64 {
+	return func(x float64) float64 { return (q[1]-p[1])*(x-p[0])/(q[0]-p[0]) + p[1] }
 }
 
 // crossAt returns the x value that is the crossing point for two lines generated
@@ -218,8 +205,9 @@ func pathsCross(x0, x1, x2, x3 point) (float64, bool) {
 // isBetween returns true if x is between a and b.
 func isBetween(x, a, b float64) bool {
 	if a < b {
-		return a <= x && x <= b // Potentially, a == b == x
+		return a <= x && x <= b
 	}
 
+	// Potentially, a == b == x
 	return b <= x && x <= a
 }
