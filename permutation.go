@@ -235,7 +235,7 @@ func reproduce(pop *population, topPct, mutationRate float64, f mutateFunc, g br
 	}
 
 	sort.Sort(nextGen)
-	if totalDist(nextGen.points, nextGen.perms[0]) < totalDist(nextGen.points, nextGen.shortestPerm) {
+	if totalSqDist(nextGen.points, nextGen.perms[0]) < totalSqDist(nextGen.points, nextGen.shortestPerm) {
 		nextGen.shortestPerm = copyPermutation(nextGen.perms[0])
 	}
 
@@ -248,7 +248,7 @@ func randPopulation(size int, ps pointSet) *population {
 	if ps == nil || len(ps) == 0 {
 		panic("pointSet must have at least one point")
 	}
-	if size <= 0 {
+	if size < 1 {
 		panic("population size must be positive")
 	}
 
@@ -406,7 +406,7 @@ func (pop *population) Len() int {
 // Less returns true if a permutation i gives a smaller total squared distance
 // than a permutation j.
 func (pop *population) Less(i, j int) bool {
-	return totalDist(pop.points, pop.perms[i]) < totalDist(pop.points, pop.perms[j])
+	return totalSqDist(pop.points, pop.perms[i]) < totalSqDist(pop.points, pop.perms[j])
 }
 
 // Swap swaps two permutations i and j.

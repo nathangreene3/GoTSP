@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"strings"
+	"sort"
 	"time"
 )
 
@@ -37,19 +37,12 @@ func geneticSoln(ps pointSet, popSize int, generations int, f mutateFunc, g bree
 	}
 
 	pop := randPopulation(popSize, ps)
-	// if totalDist(ps, pop.shortestPerm) < totalDist(ps, currentBest) {
-	pop.shortestPerm = copyPermutation(currentBest)
-	// }
+	pop.perms[0] = currentBest
+	sort.Sort(pop)
 
 	for i := 0; i < generations; i++ {
 		pop = reproduce(pop, 0.50, 0.25, f, g)
 	}
-
-	dists := make([]string, 0, pop.Len())
-	for i := range pop.perms {
-		dists = append(dists, fmt.Sprintf("%0.2f", totalDist(pop.points, pop.perms[i])))
-	}
-	fmt.Println(strings.Join(dists, " "))
 
 	if !isPermutation(pop.shortestPerm) {
 		log.Fatalf("path not a permution: %v\n", pop.shortestPerm)
