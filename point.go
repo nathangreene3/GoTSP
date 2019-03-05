@@ -59,6 +59,14 @@ func importPoints(filename string) (pointSet, error) {
 // comparePoints returns true if the points are equal in length and are equal for
 // each indexed value. It returns false if otherwise.
 func comparePoints(p, q point) bool {
+	if p == nil {
+		return q == nil
+	}
+
+	if q == nil {
+		return false // p is not nil
+	}
+
 	if len(p) != len(q) {
 		return false
 	}
@@ -75,6 +83,14 @@ func comparePoints(p, q point) bool {
 // comparePointSets returns true if the point sets are equal in length and are
 // equal for each indexed point. It returns false if otherwise.
 func comparePointSets(p, q pointSet) bool {
+	if p == nil {
+		return q == nil
+	}
+
+	if q == nil {
+		return false // p is not nil
+	}
+
 	if len(p) != len(q) {
 		return false
 	}
