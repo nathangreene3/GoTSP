@@ -17,9 +17,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dist, perm := geneticSoln(ps, 10, 1000000, reverseSubsequence, cross)
-
+	dist, perm := geneticSoln(ps, 10, 1000000, reverseSubsequence, pmx)
 	fmt.Printf("Path: %v\nDist: %0.2f\n", perm, dist)
+}
+
+func run() error {
+	// flg := flag.NewFlagSet("GoTSP", flag.ContinueOnError)
+	// input := flg.String("input_file", "", "csv file containing points")
+	// shortestPerm := flg.String("shortest_path_file", "", "csv file containing shortest known permutation through input file")
+	// generations := flg.Int("generations", 1000000, "number of generations")
+	// popSize := flg.Int("population_size", 10, "number of members in a population")
+
+	// err := flg.Parse(os.Args[1:])
+	// if err != nil {
+	// 	return err
+	// }
+
+	return nil
 }
 
 // geneticSoln solves the TSP by generating a population of permutations, then
@@ -27,28 +41,29 @@ func main() {
 // Reproduction is determined by elitism. The minimum distance found and the
 // corresponding permutation are returned.
 func geneticSoln(ps pointSet, popSize int, generations int, f mutateFunc, g breedFunc) (float64, permutation) {
-	currentBest, err := importPermutation("bestsolution.csv")
+	currentShortestPath, err := importPermutation("shortestpath.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if currentBest == nil {
-		currentBest = randPermutation(len(ps))
-	}
-
 	pop := randPopulation(popSize, ps)
-	pop.perms[0] = currentBest
+	if currentShortestPath != nil && len(currentShortestPath) == len(ps) {
+		copy(pop.perms[0], currentShortestPath)
+	}
 	sort.Sort(pop)
 
 	for i := 0; i < generations; i++ {
 		pop = reproduce(pop, 0.50, 0.25, f, g)
+	}
+	for i, p := range pop.perms {
+		fmt.Println(i, p)
 	}
 
 	if !isPermutation(pop.shortestPerm) {
 		log.Fatalf("path not a permution: %v\n", pop.shortestPerm)
 	}
 
-	err = pop.shortestPerm.exportPermutation("bestsolution.csv")
+	err = pop.shortestPerm.exportPermutation("shortestpath.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,7 +101,7 @@ func naiveSoln(ps pointSet) (float64, permutation) {
 	return minDist, minPerm
 }
 
-// factorial returns n! Returns 1 for all n < 2.
+// factorial returns n! for all n > 1 and 1 for all n < 2.
 func factorial(n int) int {
 	f := 1
 	for i := 2; i <= n; i++ {

@@ -15,7 +15,7 @@ import (
 // permutation is an ordering on Z(n).
 type permutation []int
 
-// population is a set of permutations.
+// population is a set of permutations over a point set.
 type population struct {
 	perms        []permutation // An ordering of points
 	shortestPerm permutation   // Best solution in this population
@@ -32,11 +32,13 @@ type mutateFunc func(permutation, pointSet) permutation
 func (p permutation) String() string {
 	n := len(p)
 	sb := strings.Builder{}
-	sb.Grow(n)
+	sb.Grow(2 * (n + 1))
 
-	sb.WriteString("[" + strconv.Itoa(p[0]))
+	sb.WriteByte('[')
+	sb.WriteString(strconv.Itoa(p[0]))
 	for i := 1; i < n; i++ {
-		sb.WriteString("," + strconv.Itoa(p[i]))
+		sb.WriteByte(',')
+		sb.WriteString(strconv.Itoa(p[i]))
 	}
 	sb.WriteByte(']')
 
@@ -120,6 +122,14 @@ func copyPermutation(p permutation) permutation {
 // compareIntSlices returns true if the two slices are nil or if they share the
 // same length and values at each index.
 func comparePermutations(p, q permutation) bool {
+	if p == nil {
+		return q == nil
+	}
+
+	if q == nil {
+		return false
+	}
+
 	if len(p) != len(q) {
 		return false
 	}
@@ -181,23 +191,26 @@ func permutatePointSet(ps pointSet, p permutation) pointSet {
 	return newps
 }
 
-// cross returns two new permutions each leading with the values of x and y but
-// with trailing values of y and x. Partially mapped crossover (PMX) is used to
+// pmx returns two new permutions each leading with the values of x and y but with
+// trailing values of y and x. Partially mapped crossover (PMX) is used to
 // ensure the returned permutations are actual permutations. The pivot point is
 // selected at random.
-func cross(p, q permutation) (permutation, permutation) {
+func pmx(p, q permutation) (permutation, permutation) {
 	// Source: http://user.ceng.metu.edu.tr/~ucoluk/research/publications/tspnew.pdf
 
 	u := copyPermutation(p)
 	v := copyPermutation(q)
 	pivot := rand.Intn(len(p))
+	var t int
 
 	for i := 0; i <= pivot; i++ {
-		u[u.index(q[i])] = u[i]
-		u[i] = q[i]
+		t = q[i]
+		u[u.index(t)] = u[i]
+		u[i] = t
 
-		v[v.index(p[i])] = v[i]
-		v[i] = p[i]
+		t = p[i]
+		v[v.index(t)] = v[i]
+		v[i] = t
 	}
 
 	return u, v
@@ -228,7 +241,7 @@ func reproduce(pop *population, topPct, mutationRate float64, f mutateFunc, g br
 	n := len(nextGen.perms)
 
 	for i := 0; i < int(topPct*float64(n)); i += 2 {
-		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = cross(nextGen.perms[i], nextGen.perms[i+1])
+		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = pmx(nextGen.perms[i], nextGen.perms[i+1])
 		if rand.Float64() < mutationRate {
 			nextGen.perms[n-i-1] = f(nextGen.perms[n-i-1], nextGen.points)
 			nextGen.perms[n-i-2] = f(nextGen.perms[n-i-2], nextGen.points)
@@ -328,6 +341,12 @@ func comparePopulations(p, q *population) bool {
 	}
 
 	return true
+}
+
+func (pop *population) distinctMembers() int {
+	var count int
+	// TODO
+	return count
 }
 
 // importPermutation retrieves a permutation from a given csv file.

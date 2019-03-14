@@ -20,7 +20,7 @@ func TestCross(t *testing.T) {
 	n := 4
 	p, q := basePermutation(n), basePermutation(n)
 	for i := 0; i < 10; i++ {
-		p, q = cross(p, q)
+		p, q = pmx(p, q)
 		if !isPermutation(p) || !isPermutation(q) {
 			t.Fatalf("cross produced non-permutation(s): %v and %v\n", p, q)
 		}
