@@ -13,6 +13,7 @@ func main() {
 	rand.Seed(int64(time.Now().UnixNano()))
 
 	ps, err := importPoints("cities.csv")
+	// ps, err := importPoints("fourpoints.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +77,7 @@ func geneticSoln(ps pointSet, popSize int, generations int, f mutateFunc, g bree
 // fail if the point set contains more than 15 points.
 func naiveSoln(ps pointSet) (float64, permutation) {
 	if 15 < len(ps) {
-		log.Fatalf("cannot solve on more than 15 points in a reasonable amount of time")
+		log.Fatalf("naiveSoln: cannot solve on more than 15 points in a reasonable amount of time")
 	}
 
 	perm := basePermutation(len(ps)) // Current permutation to try

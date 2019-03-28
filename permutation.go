@@ -121,7 +121,7 @@ func copyPermutation(p permutation) permutation {
 
 // compareIntSlices returns true if the two slices are nil or if they share the
 // same length and values at each index.
-func comparePermutations(p, q permutation) bool {
+func equalPermutations(p, q permutation) bool {
 	if p == nil {
 		return q == nil
 	}
@@ -239,10 +239,11 @@ func reverseSubsequence(p permutation, ps pointSet) permutation {
 func reproduce(pop *population, topPct, mutationRate float64, f mutateFunc, g breedFunc) *population {
 	nextGen := copyPopulation(pop)
 	n := len(nextGen.perms)
+	topn := int(topPct * float64(n))
 
-	for i := 0; i < int(topPct*float64(n)); i += 2 {
+	for i := 0; i < topn; i += 2 {
 		nextGen.perms[n-i-1], nextGen.perms[n-i-2] = pmx(nextGen.perms[i], nextGen.perms[i+1])
-		if rand.Float64() < mutationRate {
+		if rand.Float64() < mutationRate || equalPermutations(nextGen.perms[n-i-1], nextGen.perms[n-i-2]) {
 			nextGen.perms[n-i-1] = f(nextGen.perms[n-i-1], nextGen.points)
 			nextGen.perms[n-i-2] = f(nextGen.perms[n-i-2], nextGen.points)
 		}
@@ -312,8 +313,8 @@ func populationToString(pop *population, name string) string {
 	return sb.String()
 }
 
-// comparePopulations determines if two populations contain equal values.
-func comparePopulations(p, q *population) bool {
+// equalPopulations determines if two populations contain equal values.
+func equalPopulations(p, q *population) bool {
 	if p == nil {
 		return q == nil
 	}
@@ -327,12 +328,12 @@ func comparePopulations(p, q *population) bool {
 	}
 
 	for i := range p.perms {
-		if !comparePermutations(p.perms[i], q.perms[i]) {
+		if !equalPermutations(p.perms[i], q.perms[i]) {
 			return false
 		}
 	}
 
-	if !comparePermutations(p.shortestPerm, q.shortestPerm) {
+	if !equalPermutations(p.shortestPerm, q.shortestPerm) {
 		return false
 	}
 
@@ -343,21 +344,47 @@ func comparePopulations(p, q *population) bool {
 	return true
 }
 
+// TODO
 func (pop *population) distinctMembers() int {
+	n := len(pop.perms)
+	if n == 0 {
+		return 0
+	}
+
+	c := make([]int, n)
 	var count int
-	// TODO
+	for i := 0; i+1 < n; i++ {
+		for j := i + 1; j < n; j++ {
+			if equalPermutations(pop.perms[i], pop.perms[j]) {
+				c[i]++
+			}
+		}
+	}
+
+	for i := range c {
+		if c[i] == 0 {
+			count++
+		}
+	}
 	return count
 }
 
 // importPermutation retrieves a permutation from a given csv file.
 func importPermutation(filename string) (permutation, error) {
+	filename = strings.ToLower(filename)
 	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
 		filename += ".csv"
 	}
 
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			file, err = os.Create(filename)
+		}
+
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer file.Close()
 
@@ -390,6 +417,7 @@ func importPermutation(filename string) (permutation, error) {
 // export writes a permutation to a given file. The file contents will be
 // overwritten if it exists and will be created if it doesn't exist.
 func (p permutation) exportPermutation(filename string) error {
+	filename = strings.ToLower(filename)
 	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
 		filename += ".csv"
 	}

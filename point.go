@@ -18,13 +18,20 @@ type pointSet []point
 
 // importPoints returns a point set read from a CSV file.
 func importPoints(filename string) (pointSet, error) {
+	filename = strings.ToLower(filename)
 	if !strings.HasSuffix(strings.ToLower(filename), ".csv") {
 		filename += ".csv"
 	}
 
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			file, err = os.Create(filename)
+		}
+
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer file.Close()
 

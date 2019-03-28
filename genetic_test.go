@@ -6,12 +6,12 @@ import (
 )
 
 func TestNilPops(t *testing.T) {
-	if !comparePopulations(nil, nil) {
+	if !equalPopulations(nil, nil) {
 		t.Fatal("explicit nil isn't equal to nil")
 	}
 	p, q := &population{}, &population{}
 	p, q = nil, nil
-	if !comparePopulations(p, q) {
+	if !equalPopulations(p, q) {
 		t.Fatal("nil pointers aren't equal")
 	}
 }
